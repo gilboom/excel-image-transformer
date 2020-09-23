@@ -22,7 +22,6 @@ export class AppComponent {
     private uploadService: UploadService
   ) { }
 
-  // 监听文件变更
   onFileChange(e: any) {
     const target: DataTransfer = e.target;
     if (!target.files[0]) return;
@@ -36,13 +35,25 @@ export class AppComponent {
         // 图片所在的单元格的内容就会被替换为 url
         const url = await this.uploadService.upload(file);
         return url;
+      }).then(() => {
+        const data = excel.getData();
+        console.log("data", data);
+        // 支持多个工作薄
+        // 每个工作薄的数据就是一个二维数组
+        // [{
+        // 	"sheetName": "Sheet1",
+        // 	"data": [
+        // 		["A1 cell text", "B1 cell text", "https://xxx.com/image1.jpeg-ifwK"]
+        // 	]
+        // }, {
+        // 	"sheetName": "Sheet2",
+        // 	"data": [
+        // 		["A1 cell text", "B1 cell text", "https://xxx.com/image1.jpeg-9nxS"]
+        // 	]
+        // }]
       });
-
-      const data = excel.getData();
-      console.log("data", data);
     };
     fileReader.readAsArrayBuffer(target.files[0]);
   }
 }
-
 ```
