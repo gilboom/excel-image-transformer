@@ -15,7 +15,6 @@ export class Excel {
     cb: (file: File) => Promise<string>
   ) {
     const locationsMap = await this.imageResolver.resolveImageLocations();
-    debugger;
     for (let sheetName in locationsMap) {
       const locations = locationsMap[sheetName];
       const data = this.getDataBySheetName(sheetName);
