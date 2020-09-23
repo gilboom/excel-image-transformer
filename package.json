@@ -1,0 +1,39 @@
+{
+  "name": "excel-image-transformer",
+  "version": "1.0.0",
+  "description": "这是一个可以将 Excel 文件中的图片转换为字符串，并替换到图片放置的单元格中",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:dev": "rm -rf dist && tsc"
+  },
+  "author": "gilboom <q86002618@163.com>",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/xml2js": "^0.4.5",
+    "clean-webpack-plugin": "^3.0.0",
+    "ts-loader": "^8.0.4",
+    "typescript": "^4.0.3",
+    "webpack": "^4.44.2",
+    "webpack-cli": "^3.3.12"
+  },
+  "dependencies": {
+    "xlsx": "^0.16.7",
+    "xml-js": "^1.6.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/q86002618/excel-image-transformer.git"
+  },
+  "keywords": [
+    "excel"
+  ],
+  "bugs": {
+    "url": "https://github.com/q86002618/excel-image-transformer/issues"
+  },
+  "homepage": "https://github.com/q86002618/excel-image-transformer#readme"
+}
