@@ -31,7 +31,7 @@ export class ExcelImageResolver {
   async resolveImageLocations(): Promise<IImageMetadatasMap> {
     await this._resolveSheetMap();
     const map = await this._resolveAllSheetImages();
-    console.debug("metadatasMap", map)
+    console.debug("metadatasMap", map);
     return map;
   }
 
@@ -99,7 +99,6 @@ export class ExcelImageResolver {
     return imageMetadatas;
   }
 
-
   private _getDataFromWbFile(path: string) {
     const file = this.workbook["files"][path];
     if (!file) return null;
@@ -142,7 +141,7 @@ export class ExcelImageResolver {
   private _xml2Obj<T>(xml: string): T {
     const attributesKey = "_attr";
     const textKey = "_text";
-    const obj = xml2js(xml, { compact: true, alwaysArray: ["xdr:twoCellAnchor", "Relationship"], alwaysChildren: false, attributesKey, textKey }) as T;
+    const obj = xml2js(xml, { compact: true, alwaysArray: ["xdr:twoCellAnchor", "Relationship", "sheet"], alwaysChildren: false, attributesKey, textKey }) as T;
     const newObj: any = {};
 
     function _mergeAttrAndText(obj: any, newObj: any, newObjKey?: string, newObjParent?: any) {
@@ -151,6 +150,7 @@ export class ExcelImageResolver {
           const attrs = obj[k]
           if (k === attributesKey) {
             Object.assign(newObj, attrs);
+            delete newObj[k];
           }
           else if (k === textKey) {
             if (newObjParent) newObjParent[newObjKey] = attrs;
