@@ -58,10 +58,37 @@ export class ExcelImageResolver {
     return metadatasMap;
   }
 
+  private async _resolveDrawing(sheetId: string) {
+    const sheetXmlObj = await this._parseMetaXmlToObject(`xl/worksheets/sheet${sheetId}.xml`);
+    if (!sheetXmlObj.worksheet.drawing) return null;
+    const drawingRelId = sheetXmlObj.worksheet.drawing['r:id'];
+
+    const sheetRelsXmlObj = await this._parseMetaXmlToObject(`xl/worksheets/_rels/sheet${sheetId}.xml.rels`);
+    if (!sheetRelsXmlObj) return null;
+    const relationships: Array<any> = sheetRelsXmlObj.Relationships.Relationship;
+    const relationshipOfDrawing = relationships.find(r => {
+      return r.Id = drawingRelId;
+    });
+    if (!relationshipOfDrawing) return null;
+
+    const drawingTarget = (relationshipOfDrawing.Target as string)
+    const drawingXmlFilename = drawingTarget.substr(drawingTarget.lastIndexOf("/") + 1);
+    const drawingXmlFilePath = drawingTarget.replace("..", "xl");
+    const drawingXmlObj = await this._parseMetaXmlToObject(drawingXmlFilePath);
+
+    const drawingRelXmlFilename = drawingXmlFilename + ".rels";
+    const drawingRelXmlFilePath = `xl/drawings/_rels/${drawingRelXmlFilename}`;
+    const drawingRelXmlObj = await this._parseMetaXmlToObject(drawingRelXmlFilePath);
+    return { drawingXmlObj, drawingRelXmlObj };
+  }
+
   private async _resolveSheetImages(sheetId: string): Promise<Array<IImageMetadata>> {
-    const drawingXmlObj = await this._parseMetaXmlToObject(`xl/drawings/drawing${sheetId}.xml`);
-    if (!drawingXmlObj) return [];
+    const drawingObj = await this._resolveDrawing(sheetId);
+    if (!drawingObj) return [];
+
+    const { drawingXmlObj, drawingRelXmlObj } = drawingObj;
     console.debug("drawingXmlObj", drawingXmlObj);
+    console.debug("drawingRelXmlObj", drawingRelXmlObj);
 
     const imageAnchors: Array<any> = drawingXmlObj["xdr:wsDr"]["xdr:twoCellAnchor"];
     const imageAnchorsMap = new Map<RelationId, IImageAnchor>(
@@ -80,8 +107,6 @@ export class ExcelImageResolver {
     );
     console.debug("imageAnchorsMap", imageAnchorsMap);
 
-    const drawingRelXmlObj = await this._parseMetaXmlToObject(`xl/drawings/_rels/drawing${sheetId}.xml.rels`);
-    console.debug("drawingRelXmlObj", drawingRelXmlObj);
     const relationships: Array<any> = drawingRelXmlObj.Relationships.Relationship;
 
     const imageMetadatas: Array<IImageMetadata> = relationships.map(r => {
