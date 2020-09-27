@@ -1,6 +1,6 @@
 {
   "name": "excel-image-transformer",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "这是一个可以将 Excel 文件中的图片转换为字符串，并替换到图片放置的单元格中",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
