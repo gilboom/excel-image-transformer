@@ -91,35 +91,40 @@ export class ExcelImageResolver {
     console.debug("drawingRelXmlObj", drawingRelXmlObj);
 
     const imageAnchors: Array<any> = drawingXmlObj["xdr:wsDr"]["xdr:twoCellAnchor"];
-    const imageAnchorsMap = new Map<RelationId, IImageAnchor>(
-      imageAnchors.map(anchor => {
-        const id = anchor["xdr:pic"]["xdr:blipFill"]["a:blip"]["r:embed"];
-        const from = {
-          row: Number(anchor["xdr:from"]["xdr:row"]),
-          col: Number(anchor["xdr:from"]["xdr:col"])
-        };
-        const to = {
-          row: Number(anchor["xdr:to"]["xdr:row"]),
-          col: Number(anchor["xdr:to"]["xdr:col"]),
-        };
-        return [id, { from, to }];
-      })
-    );
+    const imageAnchorsMap = new Map<RelationId, Array<IImageAnchor>>();
+    imageAnchors.forEach(anchor => {
+      const id = anchor["xdr:pic"]["xdr:blipFill"]["a:blip"]["r:embed"];
+      const from = {
+        row: Number(anchor["xdr:from"]["xdr:row"]),
+        col: Number(anchor["xdr:from"]["xdr:col"])
+      };
+      const to = {
+        row: Number(anchor["xdr:to"]["xdr:row"]),
+        col: Number(anchor["xdr:to"]["xdr:col"]),
+      };
+      let entity = imageAnchorsMap.get(id);
+      if (!entity) {
+        entity = [];
+      }
+      entity.push({ from, to });
+      imageAnchorsMap.set(id, entity);
+    })
     console.debug("imageAnchorsMap", imageAnchorsMap);
 
     const relationships: Array<any> = drawingRelXmlObj.Relationships.Relationship;
 
-    const imageMetadatas: Array<IImageMetadata> = relationships.map(r => {
+    const imageMetadatas: Array<IImageMetadata> = relationships.flatMap(r => {
       const id: RelationId = r.Id;
       const target: string = r.Target;
       const filename = target.substr(target.lastIndexOf("/") + 1);
       const path = `xl/media/${filename}`;
       const file = this._parseMetaImageToFile(path, filename);
-      const imageAnchor = imageAnchorsMap.get(id);
-      if (!imageAnchor) throw new Error("image anchor not found");
-      const { from, to } = imageAnchor;
-      return { file, from, to };
-    })
+      const imageAnchors = imageAnchorsMap.get(id);
+      if (!imageAnchors) throw new Error("image anchor not found");
+      return imageAnchors.map(anchor => {
+        return { file, ...anchor }
+      });
+    });
     console.debug("imageMetadatas", imageMetadatas);
     return imageMetadatas;
   }
