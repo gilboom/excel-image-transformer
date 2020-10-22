@@ -90,7 +90,9 @@ export class ExcelImageResolver {
     console.debug("drawingXmlObj", drawingXmlObj);
     console.debug("drawingRelXmlObj", drawingRelXmlObj);
 
-    const imageAnchors: Array<any> = drawingXmlObj["xdr:wsDr"]["xdr:twoCellAnchor"];
+    const twoCellAnchors = drawingXmlObj["xdr:wsDr"]["xdr:twoCellAnchor"] as Array<any> || [];
+    const oneCellAnchors = drawingXmlObj["xdr:wsDr"]["xdr:oneCellAnchor"] as Array<any> || [];
+    const imageAnchors: Array<any> = oneCellAnchors.concat(twoCellAnchors);
     const imageAnchorsMap = new Map<RelationId, Array<IImageAnchor>>();
     imageAnchors.forEach(anchor => {
       const id = anchor["xdr:pic"]["xdr:blipFill"]["a:blip"]["r:embed"];
@@ -98,9 +100,10 @@ export class ExcelImageResolver {
         row: Number(anchor["xdr:from"]["xdr:row"]),
         col: Number(anchor["xdr:from"]["xdr:col"])
       };
+      const isOneCellAnchors = !anchor["xdr:to"];
       const to = {
-        row: Number(anchor["xdr:to"]["xdr:row"]),
-        col: Number(anchor["xdr:to"]["xdr:col"]),
+        row: Number(anchor[`xdr:${isOneCellAnchors ? "from" : "to"}`]["xdr:row"]),
+        col: Number(anchor[`xdr:${isOneCellAnchors ? "from" : "to"}`]["xdr:col"]),
       };
       let entity = imageAnchorsMap.get(id);
       if (!entity) {
