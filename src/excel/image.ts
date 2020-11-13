@@ -28,6 +28,9 @@ export class ExcelImageResolver {
     private workbook: XLSX.WorkBook
   ) { }
 
+  /**
+   * 解析 excel 所有工作薄上的所有图片的位置和文件
+   */
   async resolveImageLocations(): Promise<IImageMetadatasMap> {
     await this._resolveSheetMap();
     const map = await this._resolveAllSheetImages();
@@ -47,6 +50,9 @@ export class ExcelImageResolver {
     console.debug("sheetMap %o", this.sheetMap);
   }
 
+  /**
+   * 解析所有 worksheet 上的图片
+   */
   private async _resolveAllSheetImages(): Promise<IImageMetadatasMap> {
     const metadatasMap: IImageMetadatasMap = {};
 
@@ -58,6 +64,10 @@ export class ExcelImageResolver {
     return metadatasMap;
   }
 
+  /**
+   * 解析 worksheet 对应的 drawing xml 和 drawing.rels xml
+   * @param sheetId sheetId
+   */
   private async _resolveDrawing(sheetId: string) {
     const sheetXmlObj = await this._parseMetaXmlToObject(`xl/worksheets/sheet${sheetId}.xml`);
     if (!sheetXmlObj.worksheet.drawing) return null;
@@ -82,6 +92,10 @@ export class ExcelImageResolver {
     return { drawingXmlObj, drawingRelXmlObj };
   }
 
+  /**
+   * 解析 worksheet 上的图片
+   * @param sheetId sheetId
+   */
   private async _resolveSheetImages(sheetId: string): Promise<Array<IImageMetadata>> {
     const drawingObj = await this._resolveDrawing(sheetId);
     if (!drawingObj) return [];
@@ -95,7 +109,8 @@ export class ExcelImageResolver {
     const imageAnchors: Array<any> = oneCellAnchors.concat(twoCellAnchors);
     const imageAnchorsMap = new Map<RelationId, Array<IImageAnchor>>();
     imageAnchors.forEach(anchor => {
-      const id = anchor["xdr:pic"]["xdr:blipFill"]["a:blip"]["r:embed"];
+      // relationship id
+      const id: RelationId = anchor["xdr:pic"]["xdr:blipFill"]["a:blip"]["r:embed"];
       const from = {
         row: Number(anchor["xdr:from"]["xdr:row"]),
         col: Number(anchor["xdr:from"]["xdr:col"])
@@ -105,6 +120,7 @@ export class ExcelImageResolver {
         row: Number(anchor[`xdr:${isOneCellAnchors ? "from" : "to"}`]["xdr:row"]),
         col: Number(anchor[`xdr:${isOneCellAnchors ? "from" : "to"}`]["xdr:col"]),
       };
+      // 同一张图片可能被多个单元格引用
       let entity = imageAnchorsMap.get(id);
       if (!entity) {
         entity = [];
@@ -114,8 +130,8 @@ export class ExcelImageResolver {
     })
     console.debug("imageAnchorsMap", imageAnchorsMap);
 
+    // 根据 relationship id 找到实际的图片文件
     const relationships: Array<any> = drawingRelXmlObj.Relationships.Relationship;
-
     const imageMetadatas: Array<IImageMetadata> = relationships.flatMap(r => {
       const id: RelationId = r.Id;
       const target: string = r.Target;
@@ -132,14 +148,28 @@ export class ExcelImageResolver {
     return imageMetadatas;
   }
 
+  /**
+   * 从 workbook 对象的 files 属性获取文件 buffer
+   * files 包含了 excel 文件解压后的各个文件的 buffer
+   * @param path 文件路径
+   */
   private _getDataFromWbFile(path: string) {
     const file = this.workbook["files"][path];
     if (!file) return null;
 
-    const _data: Uint8Array = file._data.getContent ? file._data.getContent() : file._data;
+    // 有些文件的 _data 属性是 buffer , 有的 _data 属性是一个包含 getContent 方法的对象
+    // 通过 getContent 方法可以获取文件的 buffer
+    const _data: Uint8Array = file._data.getContent ?
+      file._data.getContent() :
+      file._data;
+
     return _data;
   }
 
+  /**
+   * 把 excel 文件解压后的 xml 文件转成 js 对象
+   * @param path 文件路径
+   */
   private async _parseMetaXmlToObject<T = any>(path: string) {
     const _data: Uint8Array | null = this._getDataFromWbFile(path);
     if (!_data) return null;
@@ -171,10 +201,20 @@ export class ExcelImageResolver {
     return file;
   }
 
+  /**
+   * 把 xml 字符串转成 js 对象
+   * @param xml xml 字符串
+   */
   private _xml2Obj<T>(xml: string): T {
     const attributesKey = "_attr";
     const textKey = "_text";
-    const obj = xml2js(xml, { compact: true, alwaysArray: ["xdr:twoCellAnchor", "Relationship", "sheet"], alwaysChildren: false, attributesKey, textKey }) as T;
+    const obj = xml2js(xml, {
+      textKey,
+      compact: true,
+      attributesKey,
+      alwaysChildren: false,
+      alwaysArray: ["xdr:twoCellAnchor", "Relationship", "sheet"],
+    }) as T;
     const newObj: any = {};
 
     function _mergeAttrAndText(obj: any, newObj: any, newObjKey?: string, newObjParent?: any) {
