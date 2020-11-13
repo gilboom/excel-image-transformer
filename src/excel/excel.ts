@@ -12,14 +12,14 @@ export class Excel {
   }
 
   async transformImagesToStr(
-    cb: (file: File) => Promise<string>
+    cb: (file: File, cell: { row: number, col: number }) => Promise<string>
   ) {
     const locationsMap = await this.imageResolver.resolveImageLocations();
     for (let sheetName in locationsMap) {
       const locations = locationsMap[sheetName];
       const data = this.getDataBySheetName(sheetName);
       for (const location of locations) {
-        const str = await cb(location.file);
+        const str = await cb(location.file, location.from);
         data[location.from.row] = data[location.from.row] || [];
         data[location.from.row][location.from.col] = str;
       }
