@@ -139,7 +139,9 @@ export class ExcelImageResolver {
       const path = `xl/media/${filename}`;
       const file = this._parseMetaImageToFile(path, filename);
       const imageAnchors = imageAnchorsMap.get(id);
-      if (!imageAnchors) throw new Error("image anchor not found");
+      if (!imageAnchors) {
+        return [];
+      }
       return imageAnchors.map(anchor => {
         return { file, ...anchor }
       });
